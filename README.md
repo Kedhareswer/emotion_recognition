@@ -13,9 +13,9 @@ A real-time emotion recognition system that can detect and classify facial emoti
 ## Project Structure
 
 ```
-├── app.py                      # Flask web application
+├── app.py                      # Flask web application (few issues with this - not working on this anymore [dropped])
 ├── emotion_recognition.py      # Core emotion recognition logic
-├── emotion_recognition_ui.py   # Desktop UI implementation
+├── emotion_recognition_ui.py   # Desktop UI implementation (working)
 ├── models/                     # Pre-trained model files
 ├── static/                     # Static assets for web interface
 ├── templates/                  # HTML templates
@@ -50,7 +50,7 @@ python app.py
 ```
 2. Open your web browser and navigate to `http://localhost:5000`
 3. Grant camera permissions when prompted
-4. The system will start detecting emotions in real-time
+4. The system will start detecting emotions in real-time (model-integration issues)
 
 ### Desktop Application
 
@@ -59,7 +59,7 @@ python app.py
 python emotion_recognition_ui.py
 ```
 2. The GUI will open with your webcam feed
-3. Emotion detection will start automatically
+3. Emotion detection will start automatically (working fine)
 
 ## Model Information
 
