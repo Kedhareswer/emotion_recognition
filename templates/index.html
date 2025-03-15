@@ -1,1 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emotion Recognition System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+        .webcam-container {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .samples-container {
+            flex: 1;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #1a73e8;
+        }
+        #webcam-view {
+            width: 100%;
+            max-width: 640px;
+            border-radius: 8px;
+        }
+        .emotion-display {
+            margin-top: 15px;
+            padding: 10px;
+            background: #e8f0fe;
+            border-radius: 6px;
+        }
+        .sample-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .sample-item {
+            text-align: center;
+        }
+        .sample-item img {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .sample-item img:hover {
+            transform: scale(1.05);
+        }
+        .sample-item p {
+            margin: 5px 0;
+            color: #5f6368;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="webcam-container">
+            <h2>Webcam Feed</h2>
+            <video id="webcam-view" autoplay playsinline></video>
+            <div class="emotion-display">
+                <p>Current Emotion: <span id="emotion-label">Initializing...</span></p>
+                <p>Confidence: <span id="confidence-value">0%</span></p>
+            </div>
+        </div>
+        <div class="samples-container">
+            <h2>Sample Images</h2>
+            <div class="sample-grid" id="sample-grid"></div>
+        </div>
+    </div>
 
+    <script>
+        const emotions = ['angry', 'disgust', 'fear', 'happy', 'sad', 'surprise', 'neutral'];
+        const video = document.getElementById('webcam-view');
+        const emotionLabel = document.getElementById('emotion-label');
+        const confidenceValue = document.getElementById('confidence-value');
+        let stream = null;
+
+        // Initialize webcam
+        async function initWebcam() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Error accessing webcam:', err);
+                emotionLabel.textContent = 'Error: Could not access webcam. Please ensure camera permissions are granted and no other application is using the camera.';
+            }
+        }
+
+        // Process video frames
+        async function processFrame() {
+            if (!stream) return;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // Convert frame to base64
+            const frame = canvas.toDataURL('image/jpeg');
+
+            try {
+                const response = await fetch('/process_frame', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ frame })
+                });
+
+                const result = await response.json();
+                if (result.face_detected) {
+                    emotionLabel.textContent = result.emotion;
+                    confidenceValue.textContent = `${(result.confidence * 100).toFixed(1)}%`;
+                } else {
+                    emotionLabel.textContent = 'No face detected';
+                    confidenceValue.textContent = '0%';
+                }
+            } catch (err) {
+                console.error('Error processing frame:', err);
+            }
+
+            // Process next frame
+            requestAnimationFrame(processFrame);
+        }
+
+        // Initialize sample images grid
+        function initSampleGrid() {
+            const grid = document.getElementById('sample-grid');
+            emotions.forEach(emotion => {
+                const item = document.createElement('div');
+                item.className = 'sample-item';
+                item.innerHTML = `
+                    <img src="/static/samples/${emotion}.svg" alt="${emotion}" />
+                    <p>${emotion}</p>
+                    <p class="prediction">--</p>
+                `;
+                grid.appendChild(item);
+            });
+        }
+
+        // Start application
+        window.addEventListener('load', () => {
+            initWebcam();
+            initSampleGrid();
+            requestAnimationFrame(processFrame);
+        });
+    </script>
+</body>
+</html>
